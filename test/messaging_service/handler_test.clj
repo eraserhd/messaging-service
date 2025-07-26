@@ -37,4 +37,13 @@
                                                                              :timestamp "2025-07-26T03:30:29Z"})]
     (is (= 200 (:status response)))
     (is (= "ok" (get-in response [:body :status])))
-    (is message)))
+    (is message "the message was stored in the database.")
+    (is (:messages/id message) "the stored message has a unique id")
+    (is (= {:messages/type "sms"
+            :messages/from "mailto:jason.m.felice@gmail.com"
+            :messages/body "helloo!!"
+            :messages/timestamp #inst "2025-07-26T03:30:29Z"}
+           (dissoc message :messages/id))
+        "the stored message has other expected field values")))
+    ;; Full message map was returned ?
+    ;; Recipients were added .

@@ -1,6 +1,7 @@
 (ns messaging-service.db
  (:require
-  [next.jdbc :as jdbc]))
+  [next.jdbc :as jdbc]
+  [next.jdbc.date-time]))
 
 (def ^:private init-script
   "
@@ -59,8 +60,9 @@
         id))))
 
 (defn insert-message [ds {:keys [from type body timestamp]}]
-  (let [id (random-uuid)]
+  (let [id        (random-uuid)
+        timestamp (java.time.Instant/parse timestamp)]
     (jdbc/with-transaction [tx ds]
       (upsert-participant tx from)
-      (jdbc/execute! tx ["INSERT INTO messages (id, \"from\", type, body, timestamp) VALUES (?, ?, ?, ?, ?::TIMESTAMP WITHOUT TIME ZONE);"
+      (jdbc/execute! tx ["INSERT INTO messages (id, \"from\", type, body, timestamp) VALUES (?, ?, ?, ?, ?);"
                          id from type body timestamp]))))
