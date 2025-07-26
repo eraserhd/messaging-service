@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # Test script for messaging service endpoints
 # This script tests the local messaging service using the JSON examples from README.md
