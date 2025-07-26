@@ -14,7 +14,7 @@
 (defn make-handler [{:keys [db-spec]}]
   (let [ds (jdbc/get-datasource db-spec)]
     (db/initialize-and-migrate ds)
-    
+
     (-> (constantly {:status 404, :body "NOT FOUND"})
         wrap-handle-messages
         ring-json/wrap-json-response)))

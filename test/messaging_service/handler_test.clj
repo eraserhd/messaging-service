@@ -9,8 +9,8 @@
 (defn- invoke [uri body]
   (let [handler  (handler/make-handler
                   {:db-spec {:dbtype "postgres", :dbname "messaging_service", :user "messaging_user", :password "messaging_password"}})
-        response (-> (mock/request :post "/api/messages/sms")
-                     (mock/json-body {})
+        response (-> (mock/request :post uri)
+                     (mock/json-body body)
                      handler
                      (update-in [:body] json/parse-string true))]
     {:response response}))
