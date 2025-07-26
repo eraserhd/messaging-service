@@ -4,4 +4,6 @@
   [ring.adapter.jetty :as jetty]))
 
 (defn -main []
-  (jetty/run-jetty handler/handler {:port 8080, :join? true}))
+  (let [db-spec (read-string (System/getenv "DB_SPEC"))
+        handler (handler/make-handler {:db-spec db-spec})]
+    (jetty/run-jetty handler {:port 8080, :join? true})))
