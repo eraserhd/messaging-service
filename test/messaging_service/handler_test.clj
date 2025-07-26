@@ -1,7 +1,7 @@
 (ns messaging-service.handler-test
  (:require
   [cheshire.core :as json]
-  [clojure.test :refer [deftest is]]
+  [clojure.test :refer [deftest testing is]]
   [clojure.java.io :as io]
   [messaging-service.handler :as handler]
   [next.jdbc :as jdbc]
@@ -12,6 +12,7 @@
 
 (def ^:private test-db-clean
   "
+    DELETE FROM message_attachments;
     DELETE FROM messages;
     DELETE FROM participant_addresses;
     DELETE FROM participants;
@@ -26,34 +27,60 @@
                         (mock/json-body body)
                         handler
                         (update-in [:body] json/parse-string true))
-        messages    (jdbc/execute! data-source ["SELECT * FROM messages;"])]
+        messages    (jdbc/execute! data-source ["SELECT * FROM messages;"])
+        attachments (jdbc/execute! data-source ["SELECT * FROM message_attachments;"])]
     {:response response
-     :messages messages}))
+     :messages messages
+     :message-attachments attachments}))
 
 (deftest t-sms-send
-  (let [{:keys [response], [message] :messages} (invoke "/api/messages/sms" {:type "sms",
-                                                                             :from "mailto:jason.m.felice@gmail.com",
-                                                                             :body "helloo!!"
-                                                                             :timestamp "2025-07-26T03:30:29Z"})]
-    (is (= 200 (:status response)))
-    (is (= "ok" (get-in response [:body :status])))
-    (is message "the message was stored in the database.")
-    (is (:messages/id message) "the stored message has a unique id")
-    (is (= {:messages/type "sms"
-            :messages/from "mailto:jason.m.felice@gmail.com"
-            :messages/body "helloo!!"
-            :messages/timestamp #inst "2025-07-26T03:30:29Z"}
-           (dissoc message :messages/id))
-        "the stored message has other expected field values")
+  (testing "Sending SMS messages"
+    (let [{:keys [response],
+           [message] :messages}
+          (invoke "/api/messages/sms"
+                  {:type "sms",
+                   :from "mailto:jason.m.felice@gmail.com",
+                   :body "helloo!!"
+                   :timestamp "2025-07-26T03:30:29Z"
+                   :attachments nil})]
+      (is (= 200 (:status response)))
+      (is (= "ok" (get-in response [:body :status])))
+      (is message "the message was stored in the database.")
+      (is (:messages/id message) "the stored message has a unique id")
+      (is (= {:messages/type "sms"
+              :messages/from "mailto:jason.m.felice@gmail.com"
+              :messages/body "helloo!!"
+              :messages/timestamp #inst "2025-07-26T03:30:29Z"}
+             (dissoc message :messages/id))
+          "the stored message has other expected field values")
 
-    (is (get-in response [:body :message]) "the resulting message was returned in the response")
-    (is (= {:type "sms"
-            :from "mailto:jason.m.felice@gmail.com"
-            :body "helloo!!"
-            :timestamp "2025-07-26T03:30:29Z"}
-           (-> response :body :message (dissoc :id)))
-        "message fields were correctly returned in response")
-    (is (= (get-in response [:body :message :id])
-           (str (:messages/id message)))
-        "the correct id was returned")))
+      (is (get-in response [:body :message]) "the resulting message was returned in the response")
+      (is (= {:type "sms"
+              :from "mailto:jason.m.felice@gmail.com"
+              :body "helloo!!"
+              :timestamp "2025-07-26T03:30:29Z"}
+             (-> response :body :message (dissoc :id)))
+          "message fields were correctly returned in response")
+      (is (= (get-in response [:body :message :id])
+             (str (:messages/id message)))
+          "the correct id was returned")))
+  (testing "Sending MMS messages, with attachments"
+    (let [{:keys [response message-attachments],
+           [message] :messages}
+          (invoke "/api/messages/sms"
+                  {:type "mms",
+                   :from "mailto:jason.m.felice@gmail.com",
+                   :body "helloo!!"
+                   :timestamp "2025-07-26T03:30:29Z"
+                   :attachments ["https://example.com/image.jpg"
+                                 "https://example.com/surprise_pikachu.jpg"]})]
+      (is (= 200 (:status response)))
+      (is (= "ok" (get-in response [:body :status])))
+      (is (= "mms" (:messages/type message)))
+      (is (= #{"https://example.com/image.jpg"
+               "https://example.com/surprise_pikachu.jpg"}
+             (->> message-attachments
+                  (map :message_attachments/url)
+                  (into #{})))))))
+
     ;; Recipients were added .

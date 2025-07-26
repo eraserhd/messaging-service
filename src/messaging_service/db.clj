@@ -31,7 +31,7 @@
     );
 
     CREATE TABLE IF NOT EXISTS message_attachments (
-      message_id UUID DEFAULT gen_random_uuid() NOT NULL,
+      message_id UUID NOT NULL REFERENCES messages ( id ),
       url TEXT NOT NULL,
       PRIMARY KEY ( message_id, url )
     );
@@ -59,13 +59,16 @@
         (jdbc/execute! tx ["INSERT INTO participant_addresses (url, participant_id) VALUES (?, ?);" url id])
         id))))
 
-(defn insert-message [ds {:keys [from type body timestamp]}]
+(defn insert-message
+  [ds {:keys [from type body timestamp attachments]}]
   (let [id        (random-uuid)
         timestamp (java.util.Date/from (java.time.Instant/parse timestamp))]
     (jdbc/with-transaction [tx ds]
       (upsert-participant tx from)
       (jdbc/execute! tx ["INSERT INTO messages (id, \"from\", type, body, timestamp) VALUES (?, ?, ?, ?, ?);"
                          id from type body timestamp])
+      (doseq [url attachments]
+        (jdbc/execute! tx ["INSERT INTO message_attachments (message_id, url) VALUES (?, ?);" id url]))
       {:id id
        :from from
        :type type
