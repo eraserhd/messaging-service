@@ -76,11 +76,13 @@
                                  "https://example.com/surprise_pikachu.jpg"]})]
       (is (= 200 (:status response)))
       (is (= "ok" (get-in response [:body :status])))
-      (is (= "mms" (:messages/type message)))
+      (is (= "mms" (:messages/type message))
+          "it has the right type")
       (is (= #{"https://example.com/image.jpg"
                "https://example.com/surprise_pikachu.jpg"}
              (->> message-attachments
                   (map :message_attachments/url)
-                  (into #{})))))))
+                  (into #{})))
+          "the attachments were stored in the database"))))
 
     ;; Recipients were added .
