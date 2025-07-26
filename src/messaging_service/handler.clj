@@ -6,15 +6,22 @@
    [ring.middleware.json :as ring-json]))
 
 (defn wrap-handle-messages [next]
-  (fn [{:keys [uri] :as request}]
+  (fn [{:keys [uri data-source] :as request}]
     (if-not (str/starts-with? uri "/api/messages/")
       (next request)
-      {:status 200, :body {:status :ok}})))
+      (do
+        (db/insert-message data-source {})
+        {:status 200, :body {:status :ok}}))))
+
+(defn wrap-add-datasource [next ds]
+  (fn [request]
+    (next (assoc request :data-source ds))))
 
 (defn make-handler [{:keys [db-spec]}]
-  (let [ds (jdbc/get-datasource db-spec)]
-    (db/initialize-and-migrate ds)
+  (let [data-source (jdbc/get-datasource db-spec)]
+    (db/initialize-and-migrate data-source)
 
     (-> (constantly {:status 404, :body "NOT FOUND"})
         wrap-handle-messages
-        ring-json/wrap-json-response)))
+        ring-json/wrap-json-response
+        (wrap-add-datasource data-source))))

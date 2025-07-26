@@ -44,3 +44,6 @@
 
 (defn initialize-and-migrate [ds]
   (jdbc/execute! ds [init-script]))
+
+(defn insert-message [ds message]
+  nil)
