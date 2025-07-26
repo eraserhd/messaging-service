@@ -6,17 +6,16 @@
   [messaging-service.handler :as handler]
   [ring.mock.request :as mock]))
 
-(defn- test-handler [& override]
-  (handler/make-handler
-   (merge
-     {:db-spec {:dbtype "postgres", :dbname "messaging_service", :user "messaging_user", :password "messaging_password"}}
-     override)))
+(defn- invoke [uri body]
+  (let [handler  (handler/make-handler
+                  {:db-spec {:dbtype "postgres", :dbname "messaging_service", :user "messaging_user", :password "messaging_password"}})
+        response (-> (mock/request :post "/api/messages/sms")
+                     (mock/json-body {})
+                     handler
+                     (update-in [:body] json/parse-string true))]
+    {:response response}))
 
 (deftest t-sms-send
-  (let [handler  (test-handler)
-        {:keys [status body]} (-> (mock/request :post "/api/messages/sms")
-                                  (mock/json-body {})
-                                  handler)
-        parsed-body (json/parse-string body true)]
-    (is (= 200 status))
-    (is (= "ok" (get parsed-body :status)))))
+  (let [{:keys [response]} (invoke "/api/messages/sms" {})]
+    (is (= 200 (:status response)))
+    (is (= "ok" (get-in response [:body :status])))))
