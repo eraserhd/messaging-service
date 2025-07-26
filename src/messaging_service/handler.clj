@@ -1,17 +1,18 @@
 (ns messaging-service.handler
   (:require
-   [next.jdbc :as jdbc]))
+   [clojure.string :as str]
+   [next.jdbc :as jdbc]
+   [messaging-service.db :as db]))
 
 (defn make-handler [{:keys [db-spec]}]
   (let [ds (jdbc/get-datasource db-spec)]
-    (fn handler [{:keys [uri] :as request}]
-      (case uri
-       "/api/messages/sms"   {:status 200}
-       "/api/messages/email" {:status 200}
-       "/api/webhooks/sms"   {:status 200}
-       "/api/webhooks/email" {:status 200}
+    (db/initialize-and-migrate ds)
+    (fn *handler [{:keys [uri] :as request}]
+      (condp #(str/starts-with? %2 %1) uri
+       "/api/messages/" {:status 200}
+       "/api/webhooks/" {:status 200}
 
-       "/api/conversations"  {:status 200}
+       "/api/conversations/"  {:status 200}
        ;/api/conversations/1/messages {:status 200}
 
        {:status 404,
