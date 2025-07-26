@@ -6,9 +6,11 @@
   [messaging-service.handler :as handler]
   [ring.mock.request :as mock]))
 
+(def ^:private db-spec {:dbtype "postgres", :dbname "messaging_service", :user "messaging_user", :password "messaging_password"})
+
 (defn- invoke [uri body]
   (let [handler  (handler/make-handler
-                  {:db-spec {:dbtype "postgres", :dbname "messaging_service", :user "messaging_user", :password "messaging_password"}})
+                  {:db-spec db-spec})
         response (-> (mock/request :post uri)
                      (mock/json-body body)
                      handler
