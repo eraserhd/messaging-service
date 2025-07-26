@@ -9,9 +9,9 @@
   (fn [{:keys [uri data-source body] :as request}]
     (if-not (str/starts-with? uri "/api/messages/")
       (next request)
-      (do
-        (db/insert-message data-source body)
-        {:status 200, :body {:status :ok}}))))
+      (let [message-result (db/insert-message data-source body)]
+        {:status 200, :body {:status :ok,
+                             :message message-result}}))))
 
 (defn wrap-add-datasource [next ds]
   (fn [request]

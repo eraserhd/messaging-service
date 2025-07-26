@@ -61,8 +61,13 @@
 
 (defn insert-message [ds {:keys [from type body timestamp]}]
   (let [id        (random-uuid)
-        timestamp (java.time.Instant/parse timestamp)]
+        timestamp (java.util.Date/from (java.time.Instant/parse timestamp))]
     (jdbc/with-transaction [tx ds]
       (upsert-participant tx from)
       (jdbc/execute! tx ["INSERT INTO messages (id, \"from\", type, body, timestamp) VALUES (?, ?, ?, ?, ?);"
-                         id from type body timestamp]))))
+                         id from type body timestamp])
+      {:id id
+       :from from
+       :type type
+       :body body
+       :timestamp timestamp})))

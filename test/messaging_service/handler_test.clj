@@ -44,6 +44,16 @@
             :messages/body "helloo!!"
             :messages/timestamp #inst "2025-07-26T03:30:29Z"}
            (dissoc message :messages/id))
-        "the stored message has other expected field values")))
-    ;; Full message map was returned ?
+        "the stored message has other expected field values")
+
+    (is (get-in response [:body :message]) "the resulting message was returned in the response")
+    (is (= {:type "sms"
+            :from "mailto:jason.m.felice@gmail.com"
+            :body "helloo!!"
+            :timestamp "2025-07-26T03:30:29Z"}
+           (-> response :body :message (dissoc :id)))
+        "message fields were correctly returned in response")
+    (is (= (get-in response [:body :message :id])
+           (str (:messages/id message)))
+        "the correct id was returned")))
     ;; Recipients were added .
