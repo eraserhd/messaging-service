@@ -5,5 +5,6 @@ set -e
 echo "Starting the application..."
 echo "Environment: ${ENV:-development}"
 
-# Add your application startup commands here
+clj -M:run &
+
 echo "Application started successfully!" 
