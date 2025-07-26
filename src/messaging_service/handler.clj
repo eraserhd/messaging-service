@@ -6,11 +6,11 @@
    [ring.middleware.json :as ring-json]))
 
 (defn wrap-handle-messages [next]
-  (fn [{:keys [uri data-source] :as request}]
+  (fn [{:keys [uri data-source body] :as request}]
     (if-not (str/starts-with? uri "/api/messages/")
       (next request)
       (do
-        (db/insert-message data-source {})
+        (db/insert-message data-source body)
         {:status 200, :body {:status :ok}}))))
 
 (defn wrap-add-datasource [next ds]
@@ -24,4 +24,5 @@
     (-> (constantly {:status 404, :body "NOT FOUND"})
         wrap-handle-messages
         ring-json/wrap-json-response
+        (ring-json/wrap-json-body {:keywords? true})
         (wrap-add-datasource data-source))))

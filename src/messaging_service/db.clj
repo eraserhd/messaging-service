@@ -45,5 +45,22 @@
 (defn initialize-and-migrate [ds]
   (jdbc/execute! ds [init-script]))
 
-(defn insert-message [ds message]
-  nil)
+(defn upsert-participant
+  "Creates a new address and participant, unless the address already exists.
+
+  Returns the new or existing participant ID."
+  [ds url]
+  (jdbc/with-transaction [tx ds]
+    (if-let [{id :participant_addresses/participant_id} (jdbc/execute-one! tx ["SELECT participant_id FROM participant_addresses WHERE url = ?;" url])]
+      id
+      (let [id (random-uuid)]
+        (jdbc/execute! tx ["INSERT INTO participants (id) VALUES (?);" id])
+        (jdbc/execute! tx ["INSERT INTO participant_addresses (url, participant_id) VALUES (?, ?);" url id])
+        id))))
+
+(defn insert-message [ds {:keys [from type body timestamp]}]
+  (let [id (random-uuid)]
+    (jdbc/with-transaction [tx ds]
+      (upsert-participant tx from)
+      (jdbc/execute! tx ["INSERT INTO messages (id, \"from\", type, body, timestamp) VALUES (?, ?, ?, ?, ?::TIMESTAMP WITHOUT TIME ZONE);"
+                         id from type body timestamp]))))

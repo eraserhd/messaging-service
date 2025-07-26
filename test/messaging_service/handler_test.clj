@@ -13,6 +13,8 @@
 (def ^:private test-db-clean
   "
     DELETE FROM messages;
+    DELETE FROM participant_addresses;
+    DELETE FROM participants;
   ")
 
 (defn- invoke [uri body]
@@ -29,6 +31,10 @@
      :messages messages}))
 
 (deftest t-sms-send
-  (let [{:keys [response]} (invoke "/api/messages/sms" {})]
+  (let [{:keys [response], [message] :messages} (invoke "/api/messages/sms" {:type "sms",
+                                                                             :from "mailto:jason.m.felice@gmail.com",
+                                                                             :body "helloo!!"
+                                                                             :timestamp "2025-07-26T03:30:29Z"})]
     (is (= 200 (:status response)))
-    (is (= "ok" (get-in response [:body :status])))))
+    (is (= "ok" (get-in response [:body :status])))
+    (is message)))
