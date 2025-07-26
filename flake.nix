@@ -16,6 +16,7 @@
           buildInputs = with pkgs; [
             gnumake
             docker-compose
+            clojure
           ];
         };
       }
