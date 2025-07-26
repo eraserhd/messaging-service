@@ -6,9 +6,13 @@
   (let [ds (jdbc/get-datasource db-spec)]
     (fn handler [{:keys [uri] :as request}]
       (case uri
+       "/api/messages/sms"   {:status 200}
+       "/api/messages/email" {:status 200}
+       "/api/webhooks/sms"   {:status 200}
+       "/api/webhooks/email" {:status 200}
 
-       "/api/messages/sms"
-       {:status 200}
+       "/api/conversations"  {:status 200}
+       ;/api/conversations/1/messages {:status 200}
 
        {:status 404,
         :body "NOT FOUND"}))))
