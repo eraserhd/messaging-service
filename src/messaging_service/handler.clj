@@ -12,8 +12,7 @@
     (if-not (str/starts-with? uri "/api/messages/")
       (next request)
       (let [message        (message/normalize body)
-                             ;;FIXME:
-            send-result    (provider/send-message-with-retries (assoc message ::message/type (keyword (:type message))))
+            send-result    (provider/send-message-with-retries message)
             message-result (db/insert-message data-source message)]
         {:status 200, :body {:status :ok,
                              :message message-result}}))))

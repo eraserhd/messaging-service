@@ -1,6 +1,7 @@
 (ns messaging-service.message
   "This name service is for validation and normalization of messages."
   (:require
+   [clojure.set :as set]
    [clojure.string :as str]))
 
 (defn- normalize-address
@@ -28,4 +29,6 @@
   "Normalizes a message map."
   [message]
   (-> message
+      (set/rename-keys {:type ::type})
+      (update ::type keyword)
       (update :from normalize-address)))

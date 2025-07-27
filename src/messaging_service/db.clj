@@ -1,5 +1,6 @@
 (ns messaging-service.db
  (:require
+  [messaging-service.message :as message]
   [next.jdbc :as jdbc]
   [next.jdbc.date-time]))
 
@@ -67,13 +68,13 @@
         id))))
 
 (defn insert-message
-  [ds {:keys [from type body timestamp attachments]}]
+  [ds {:keys [from ::message/type body timestamp attachments]}]
   (let [id        (random-uuid)
         timestamp (java.util.Date/from (java.time.Instant/parse timestamp))]
     (jdbc/with-transaction [tx ds]
       (upsert-participant tx from)
       (jdbc/execute! tx ["INSERT INTO messages (id, \"from\", type, body, timestamp) VALUES (?, ?, ?, ?, ?);"
-                         id from type body timestamp])
+                         id from (name type) body timestamp])
       (doseq [url attachments]
         (jdbc/execute! tx ["INSERT INTO message_attachments (message_id, url) VALUES (?, ?);" id url]))
       {:id id
