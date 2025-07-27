@@ -31,6 +31,7 @@
   (-> message
       (set/rename-keys {:type ::type
                         :from ::from
-                        :body ::body})
+                        :body ::body
+                        :timestamp ::timestamp})
       (update ::type keyword)
       (update ::from normalize-address)))
