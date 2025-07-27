@@ -128,4 +128,37 @@
                    :timestamp "2024-11-01T14:00:00Z"})]
       (is (= 200 (:status response)))
       (is (= "ok" (get-in response [:body :status])))
-      (is (= "email" (:messages/type message))))))
+      (is (= "email" (:messages/type message)))))
+  (testing "Receiving SMS messages"
+    (let [{:keys [response]
+           [message] :messages}
+          (invoke "/api/webhooks/sms"
+                  {:from "+18045551234",
+                   :to "+12016661234",
+                   :type "sms",
+                   :messaging_provider_id "message-1",
+                   :body "This is an incoming SMS message",
+                   :attachments nil,
+                   :timestamp "2024-11-01T14:00:00Z"})]
+      (is (= 200 (:status response)))
+      (is (= "ok" (get-in response [:body :status])))
+      (is (= "sms" (:messages/type message)))))
+  (testing "Receiving MMS messages"
+    (let [{:keys [response message-attachments]
+           [message] :messages}
+          (invoke "/api/webhooks/sms"
+                  {:from "+18045551234",
+                   :to "+12016661234",
+                   :type "mms",
+                   :messaging_provider_id "message-1",
+                   :body "This is an incoming SMS message",
+                   :attachments ["https://example.com/received-image.jpg"],
+                   :timestamp "2024-11-01T14:00:00Z"})]
+      (is (= 200 (:status response)))
+      (is (= "ok" (get-in response [:body :status])))
+      (is (= "mms" (:messages/type message)))
+      (is (= #{"https://example.com/received-image.jpg"}
+             (->> message-attachments
+                  (map :message_attachments/url)
+                  (into #{})))
+          "the attachments were stored in the database"))))
