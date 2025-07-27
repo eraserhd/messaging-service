@@ -4,10 +4,9 @@
 
 (defmulti send-message
   "Sends a message by routing it to a provider who has registered to handle it."
-  (fn [message]
-    (::message/type message)))
+  ::message/type)
 
-(defn supported-types
-  "Returns a list of supported types."
+(defn registered-types
+  "Returns a list of registered types."
   []
-  (keys (methods send-message)))
+  (into #{} (keys (methods send-message))))
