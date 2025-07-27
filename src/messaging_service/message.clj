@@ -29,6 +29,7 @@
   "Normalizes a message map."
   [message]
   (-> message
-      (set/rename-keys {:type ::type})
+      (set/rename-keys {:type ::type
+                        :from ::from})
       (update ::type keyword)
-      (update :from normalize-address)))
+      (update ::from normalize-address)))
