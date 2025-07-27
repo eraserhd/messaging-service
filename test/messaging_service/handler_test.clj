@@ -167,7 +167,7 @@
 
 (deftest t-api-webhook-endpoints
   (testing "Receiving email messages"
-    (let [{:keys [response]
+    (let [{:keys [response message-recipients]
            [message] :messages}
           (invoke "/api/webhooks/email"
                   {:from "contact@gmail.com",
@@ -179,9 +179,10 @@
       (is (= 200 (:status response)))
       (is (= "ok" (get-in response [:body :status])))
       (is (= "email" (:messages/type message)))
-      (is (= "message-3" (:messages/provider_id message)))))
+      (is (= "message-3" (:messages/provider_id message)))
+      (is (= [{:message_recipients/to "mailto:user@usehatchapp.com"}] message-recipients))))
   (testing "Receiving SMS messages"
-    (let [{:keys [response]
+    (let [{:keys [response message-recipients]
            [message] :messages}
           (invoke "/api/webhooks/sms"
                   {:from "+18045551234",
@@ -194,7 +195,8 @@
       (is (= 200 (:status response)))
       (is (= "ok" (get-in response [:body :status])))
       (is (= "sms" (:messages/type message)))
-      (is (= "message-1" (:messages/provider_id message)))))
+      (is (= "message-1" (:messages/provider_id message)))
+      (is (= [{:message_recipients/to "tel:+12016661234"}] message-recipients))))
   (testing "Receiving MMS messages"
     (let [{:keys [response message-attachments]
            [message] :messages}
