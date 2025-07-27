@@ -22,13 +22,14 @@
       ( 'mms' ),
       ( 'email' )
     ON CONFLICT DO NOTHING;
-
+  
     CREATE TABLE IF NOT EXISTS messages (
       id UUID DEFAULT gen_random_uuid() NOT NULL PRIMARY KEY,
       \"from\" TEXT NOT NULL REFERENCES participant_addresses ( url ),
       type TEXT NOT NULL REFERENCES message_types ( id ),
       body TEXT NOT NULL,
-      timestamp TIMESTAMP WITHOUT TIME ZONE NOT NULL DEFAULT now()
+      timestamp TIMESTAMP WITHOUT TIME ZONE NOT NULL DEFAULT now(),
+      provider_id TEXT
     );
 
     CREATE TABLE IF NOT EXISTS message_attachments (
@@ -68,17 +69,23 @@
         id))))
 
 (defn insert-message
-  [ds {:keys [::message/from ::message/type ::message/body ::message/timestamp ::message/attachments]}]
+  [ds {:keys [::message/from
+              ::message/type
+              ::message/body
+              ::message/timestamp
+              ::message/attachments
+              ::message/provider_id]}]
   (let [id        (random-uuid)
         timestamp (java.util.Date/from (java.time.Instant/parse timestamp))]
     (jdbc/with-transaction [tx ds]
       (upsert-participant tx from)
-      (jdbc/execute! tx ["INSERT INTO messages (id, \"from\", type, body, timestamp) VALUES (?, ?, ?, ?, ?);"
-                         id from (name type) body timestamp])
+      (jdbc/execute! tx ["INSERT INTO messages (id, \"from\", type, body, timestamp, provider_id) VALUES (?, ?, ?, ?, ?, ?);"
+                         id from (name type) body timestamp provider_id])
       (doseq [url attachments]
         (jdbc/execute! tx ["INSERT INTO message_attachments (message_id, url) VALUES (?, ?);" id url]))
       {::message/id id
        ::message/from from
        ::message/type type
        ::message/body body
-       ::message/timestamp timestamp})))
+       ::message/timestamp timestamp
+       ::message/provider_id provider_id})))

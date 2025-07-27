@@ -10,4 +10,12 @@
 
 (defmethod provider/extract-webhook-message :email
   [_ body]
-  (message/normalize (assoc body ::message/type :email)))
+  (let [{:keys [from to xillio_id body attachments timestamp]} body]
+    (message/normalize
+     {::message/type        :email,
+      ::message/from        from,
+      ::message/to          to,
+      ::message/provider_id xillio_id,
+      ::message/body        body,
+      ::message/attachments attachments,
+      ::message/timestamp   timestamp})))

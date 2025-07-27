@@ -76,14 +76,16 @@
       (is (= {:messages/type "sms"
               :messages/from "tel:+12016661234"
               :messages/body "helloo!!"
-              :messages/timestamp #inst "2025-07-26T03:30:29Z"}
+              :messages/timestamp #inst "2025-07-26T03:30:29Z"
+              :messages/provider_id nil}
              (dissoc message :messages/id))
           "the stored message has other expected field values")
       (is (get-in response [:body :message]) "the resulting message was returned in the response")
       (is (= {:type "sms"
               :from "tel:+12016661234"
               :body "helloo!!"
-              :timestamp "2025-07-26T03:30:29Z"}
+              :timestamp "2025-07-26T03:30:29Z"
+              :provider_id nil}
              (-> response :body :message (dissoc :id)))
           "message fields were correctly returned in response")
       (is (= (get-in response [:body :message :id])
@@ -173,7 +175,8 @@
                    :timestamp "2024-11-01T14:00:00Z"})]
       (is (= 200 (:status response)))
       (is (= "ok" (get-in response [:body :status])))
-      (is (= "email" (:messages/type message)))))
+      (is (= "email" (:messages/type message)))
+      (is (= "message-3" (:messages/provider_id message)))))
   (testing "Receiving SMS messages"
     (let [{:keys [response]
            [message] :messages}
