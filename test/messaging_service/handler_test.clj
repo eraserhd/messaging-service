@@ -161,9 +161,6 @@
         (is (<= 250 (- end start))
             "it should have waited at least 250 msec")))))
 
-
-    ;; Recipients were added .
-
 (deftest t-api-webhook-endpoints
   (testing "Receiving email messages"
     (let [{:keys [response]
