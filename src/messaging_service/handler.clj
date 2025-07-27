@@ -18,14 +18,15 @@
 
 (defn wrap-handle-messages [next]
   (fn [{:keys [uri data-source body] :as request}]
-    (if-not (str/starts-with? uri "/api/messages/")
-      (next request)
-      (let [message        (message/normalize body)
+    (if-let [[_ url-type]  (re-matches #"^/api/messages/([^/]*)/?$" uri)]
+      (let [message        (message/normalize (merge {:type (keyword url-type)}
+                                                     body))
             send-result    (provider/send-message-with-retries message)
             message-result (db/insert-message data-source message)]
         {:status 200,
          :body {:status :ok,
-                :message (denamespace message-result)}}))))
+                :message (denamespace message-result)}})
+      (next request))))
 
 (defn wrap-add-datasource [next ds]
   (fn [request]

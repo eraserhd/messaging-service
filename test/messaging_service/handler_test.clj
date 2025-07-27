@@ -94,6 +94,16 @@
              (->> message-attachments
                   (map :message_attachments/url)
                   (into #{})))
-          "the attachments were stored in the database"))))
+          "the attachments were stored in the database")))
+  (testing "Sending email messages"
+    (let [{:keys [response message-attachements],
+           [message] :messages}
+          (invoke "/api/messages/email"
+                  {:from "+12016661234",
+                   :body "helloo!!"
+                   :timestamp "2025-07-26T03:30:29Z"
+                   :attachments ["https://example.com/image.jpg"
+                                 "https://example.com/surprise_pikachu.jpg"]})]
+      (is (= 200 (:status response))))))
 
     ;; Recipients were added .
