@@ -59,7 +59,7 @@
   (let [send-channel  (get-in processors [type :queue-ch])
         reply-channel (async/chan)
         _             (async/>!! send-channel {:message message, :reply-channel reply-channel})
-        result        (async/alts!! [reply-channel (async/timeout 30000)])]
+        [result _]    (async/alts!! [reply-channel (async/timeout 30000)])]
     (when-not result
       (throw (ex-info "Timeout waiting for processor result." {:type type})))
     result))

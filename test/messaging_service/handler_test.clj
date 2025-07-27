@@ -4,6 +4,7 @@
   [clojure.test :refer [deftest testing is]]
   [clojure.java.io :as io]
   [messaging-service.handler :as handler]
+  [messaging-service.message :as message]
   [messaging-service.provider :as provider]
   [next.jdbc :as jdbc]
   [ring.mock.request :as mock]
@@ -43,6 +44,11 @@
      :messages messages
      :message-attachments attachments}))
 
+(defmulti erroring-send-message ::message/type)
+(defmethod erroring-send-message :email
+  [message]
+  {:status :error, :error "U FAIL IT"})
+
 (deftest t-api-message-endpoints
   (testing "Sending SMS messages"
     (let [{:keys [response],
@@ -63,7 +69,6 @@
               :messages/timestamp #inst "2025-07-26T03:30:29Z"}
              (dissoc message :messages/id))
           "the stored message has other expected field values")
-
       (is (get-in response [:body :message]) "the resulting message was returned in the response")
       (is (= {:type "sms"
               :from "tel:+12016661234"
@@ -111,7 +116,20 @@
                "https://example.com/surprise_pikachu.jpg"}
              (->> message-attachments
                   (map :message_attachments/url)
-                  (into #{})))))))
+                  (into #{}))))))
+  (testing "When the downstream provider fails"
+    (with-redefs [provider/send-message erroring-send-message]
+      (let [{:keys [response message-attachments],
+             [message] :messages}
+            (invoke "/api/messages/email"
+                    {:from "+12016661234",
+                     :body "helloo!!"
+                     :timestamp "2025-07-26T03:30:29Z"
+                     :attachments ["https://example.com/image.jpg"
+                                   "https://example.com/surprise_pikachu.jpg"]})]
+        (is (= 500 (:status response)))
+        (is (= "error" (get-in response [:body :status])))))))
+
 
     ;; Recipients were added .
 

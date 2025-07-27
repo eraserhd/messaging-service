@@ -22,9 +22,13 @@
       (let [message        (message/normalize (merge {:type (keyword url-type)} body))
             send-result    (provider/send-message-with-retries providers message)
             message-result (db/insert-message data-source message)]
-        {:status 200,
-         :body {:status :ok,
-                :message (denamespace message-result)}})
+        (case (:status send-result)
+          :ok    {:status 200,
+                  :body {:status :ok,
+                         :message (denamespace message-result)}}
+          :error {:status 500,
+                  :body {:status :error,
+                         :error (:error send-result)}}))
       (next request))))
 
 (defn wrap-handle-webhooks [next]
