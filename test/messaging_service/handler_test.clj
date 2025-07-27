@@ -30,20 +30,23 @@
 
   Cleans the database, invokes, queries for resulting objects and returns the objects
   and the API response for interrogation."
-  [uri body]
+  [& args]
   (let [data-source (jdbc/get-datasource db-spec)
-        handler     (handler/make-handler
-                     {:db-spec db-spec})
-        method      (if body :post :get)
-        response    (cond-> (mock/request method uri)
-                        (= method :post) (mock/json-body body)
-                        true             handler
-                        true             (update-in [:body] json/parse-string true))
+        handler     (handler/make-handler {:db-spec db-spec})
+        responses   (->> args
+                         (partition 2)
+                         (map (fn [[uri body]]
+                                (let [method (if body :post :get)]
+                                  (cond-> (mock/request method uri)
+                                    (= method :post) (mock/json-body body)
+                                    true             handler
+                                    true             (update-in [:body] json/parse-string true)))))
+                         (into []))
         messages    (jdbc/execute! data-source ["SELECT * FROM messages;"])
         recipients  (jdbc/execute! data-source ["SELECT \"to\" FROM message_recipients;"])
         attachments (jdbc/execute! data-source ["SELECT * FROM message_attachments;"])
         _           (jdbc/execute! data-source [test-db-clean])]
-    {:responses [response]
+    {:responses responses
      :messages messages
      :message-attachments attachments
      :message-recipients recipients}))
