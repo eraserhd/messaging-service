@@ -96,7 +96,7 @@
                   (into #{})))
           "the attachments were stored in the database")))
   (testing "Sending email messages"
-    (let [{:keys [response message-attachements],
+    (let [{:keys [response message-attachments],
            [message] :messages}
           (invoke "/api/messages/email"
                   {:from "+12016661234",
@@ -104,6 +104,14 @@
                    :timestamp "2025-07-26T03:30:29Z"
                    :attachments ["https://example.com/image.jpg"
                                  "https://example.com/surprise_pikachu.jpg"]})]
-      (is (= 200 (:status response))))))
+      (is (= 200 (:status response)))
+      (is (= "ok" (get-in response [:body :status])))
+      (is (= "email" (:messages/type message))
+          "it has the right type")
+      (is (= #{"https://example.com/image.jpg"
+               "https://example.com/surprise_pikachu.jpg"}
+             (->> message-attachments
+                  (map :message_attachments/url)
+                  (into #{})))))))
 
     ;; Recipients were added .
