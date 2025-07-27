@@ -52,9 +52,9 @@
   Returns the new or existing participant ID."
   [ds url]
   (jdbc/with-transaction [tx ds]
-    ;; Advisory lock is necessary to prevent race on two processes attempting to insert. Normally,
-    ;; I'd do this with INSERT .. ON CONFLICT UPDATE, but that's not possible here because of the
-    ;; the foreign key and two insert statements.
+    ;; Advisory lock is necessary to prevent race on two processes attempting to insert, causing
+    ;; one transaction to fail.  Normally, I'd do this with INSERT .. ON CONFLICT UPDATE, but
+    ;; that's not possible here because of the foreign key and two insert statements.
     ;;
     ;; (hash url) uses Clojure's internal hashing algorithm, which has been known to change across
     ;; versions.  It would be better to use eight bytes from a SHA256 in production.
