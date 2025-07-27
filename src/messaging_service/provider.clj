@@ -15,8 +15,6 @@
   "
   ::message/type)
 
-(def ^:private provider-processing-channels (atom {}))
-
 (defn- spawn-channel-processor [ch]
   ;; Start a go routine to process messages for this processor.  Better
   ;; things can be implemented, including using a pool of workers, but
@@ -34,26 +32,31 @@
           (when-let [next-item (async/<! ch)]
             (recur next-item)))))))
 
-(defn- provider-processing-channel [type]
-  (when-not (contains? (methods send-message) type)
-    (throw (ex-info (str "Unknown type " type) {:type type})))
-  (let [[old new] (swap-vals! provider-processing-channels
-                              (fn [old]
-                                (if (contains? old type)
-                                  old
-                                  (assoc old type (async/chan 100)))))
-        ch        (get new type)]
-    (when-not (= old new)
-      (spawn-channel-processor ch))
-    ch))
+(defn start
+  "Start workers for each registered processor type."
+  []
+  (reduce
+   (fn [providers type]
+     (let [queue-ch (async/chan)
+           close-ch (spawn-channel-processor queue-ch)]
+       (assoc providers type {:queue-ch queue-ch,
+                              :close-ch close-ch})))
+   {}
+   (keys (methods send-message))))
+
+(defn shutdown [processors]
+  (doseq [{:keys [queue-ch]} processors]
+    (async/close! queue-ch))
+  (doseq [{:keys [close-ch]} processors]
+    (async/<!! close-ch)))
 
 (defn send-message-with-retries
   "Sends a message like send-message, except that retries are handled automatically.
 
   Each message type gets its own work queue, and retries suspend that queue's
   processing until the requested timeout expires."
-  [{:keys [::message/type], :as message}]
-  (let [send-channel  (provider-processing-channel type)
+  [processors {:keys [::message/type], :as message}]
+  (let [send-channel  (get-in processors [type :queue-ch])
         reply-channel (async/chan)
         _             (async/>!! send-channel {:message message, :reply-channel reply-channel})
         result        (async/alts!! [reply-channel (async/timeout 30000)])]
@@ -61,7 +64,3 @@
       (throw (ex-info "Timeout waiting for processor result." {:type type})))
     result))
 
-(defn shutdown []
-  (let [old (reset! provider-processing-channels {})]
-    (doseq [channel (vals old)]
-      (async/close! channel))))

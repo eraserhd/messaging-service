@@ -17,11 +17,10 @@
    m))
 
 (defn wrap-handle-messages [next]
-  (fn [{:keys [uri data-source body] :as request}]
+  (fn [{:keys [uri data-source body providers] :as request}]
     (if-let [[_ url-type]  (re-matches #"^/api/messages/([^/]*)/?$" uri)]
-      (let [message        (message/normalize (merge {:type (keyword url-type)}
-                                                     body))
-            send-result    (provider/send-message-with-retries message)
+      (let [message        (message/normalize (merge {:type (keyword url-type)} body))
+            send-result    (provider/send-message-with-retries providers message)
             message-result (db/insert-message data-source message)]
         {:status 200,
          :body {:status :ok,
@@ -29,15 +28,21 @@
       (next request))))
 
 (defn wrap-handle-webhooks [next]
-  (fn [{:keys [uri], :as request}]
+  (fn [{:keys [uri data-source body], :as request}]
     (if-let [[_ url-type] (re-matches #"^/api/webhooks/([^/]*)/?$" uri)]
-      {:status 200,
-       :body {:status :ok}}
+      (let [message       (message/normalize (merge {:type (keyword url-type)} body))
+            _             (db/insert-message data-source message)]
+        {:status 200,
+         :body {:status :ok}})
       (next request))))
 
 (defn wrap-add-datasource [next ds]
   (fn [request]
     (next (assoc request :data-source ds))))
+
+(defn wrap-add-providers [next providers]
+  (fn [request]
+    (next (assoc request :providers providers))))
 
 (defn make-handler [{:keys [db-spec]}]
   (let [data-source (jdbc/get-datasource db-spec)]
@@ -48,4 +53,5 @@
         wrap-handle-webhooks
         ring-json/wrap-json-response
         (ring-json/wrap-json-body {:keywords? true})
+        (wrap-add-providers (provider/start))
         (wrap-add-datasource data-source))))
