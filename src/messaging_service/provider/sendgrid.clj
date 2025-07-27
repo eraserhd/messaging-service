@@ -1,8 +1,13 @@
 (ns messaging-service.provider.sendgrid
  (:require
-  [messaging-service.provider]))
+  [messaging-service.message :as message]
+  [messaging-service.provider :as provider]))
 
-(defmethod messaging-service.provider/send-message :email
+(defmethod provider/send-message :email
   [message]
-  (prn "Sendgrid provider recieved this message: " message)
+  (prn "Sendgrid provider received this message: " message)
   {:status :ok})
+
+(defmethod provider/extract-webhook-message :email
+  [_ body]
+  (message/normalize (assoc body ::message/type :email)))

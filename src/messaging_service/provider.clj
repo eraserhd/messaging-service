@@ -15,6 +15,13 @@
   "
   ::message/type)
 
+(defmulti extract-webhook-message
+  "Extracts a message from a webhook body.
+
+  Returns a valid ::message/message."
+  (fn [type body]
+    type))
+
 (defn- spawn-channel-processor [ch]
   ;; Start a go routine to process messages for this processor.  Better
   ;; things can be implemented, including using a pool of workers, but

@@ -1,13 +1,18 @@
 (ns messaging-service.provider.twilio
   (:require
-   [messaging-service.provider]))
+   [messaging-service.message :as message]
+   [messaging-service.provider :as provider]))
 
-(defmethod messaging-service.provider/send-message :sms
+(defmethod provider/send-message :sms
   [message]
-  (prn "Twilio provider recieved this SMS message: " message)
+  (prn "Twilio provider received this SMS message: " message)
   {:status :ok})
 
-(defmethod messaging-service.provider/send-message :mms
+(defmethod provider/send-message :mms
   [message]
-  (prn "Twilio provider recieved this MMS message: " message)
+  (prn "Twilio provider received this MMS message: " message)
   {:status :ok})
+
+(defmethod provider/extract-webhook-message :sms
+  [_ body]
+  (message/normalize body))

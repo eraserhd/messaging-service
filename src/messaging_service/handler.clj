@@ -34,7 +34,7 @@
 (defn wrap-handle-webhooks [next]
   (fn [{:keys [uri data-source body], :as request}]
     (if-let [[_ url-type] (re-matches #"^/api/webhooks/([^/]*)/?$" uri)]
-      (let [message       (message/normalize (merge {:type (keyword url-type)} body))
+      (let [message       (provider/extract-webhook-message (keyword url-type) body)
             _             (db/insert-message data-source message)]
         {:status 200,
          :body {:status :ok}})
