@@ -77,8 +77,8 @@
                          id from (name type) body timestamp])
       (doseq [url attachments]
         (jdbc/execute! tx ["INSERT INTO message_attachments (message_id, url) VALUES (?, ?);" id url]))
-      {:id id
-       :from from
-       :type type
-       :body body
-       :timestamp timestamp})))
+      {::message/id id
+       ::message/from from
+       ::message/type type
+       ::message/body body
+       ::message/timestamp timestamp})))

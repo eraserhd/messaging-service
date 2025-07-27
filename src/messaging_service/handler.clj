@@ -1,11 +1,20 @@
 (ns messaging-service.handler
   (:require
    [clojure.string :as str]
+   [clojure.walk :as walk]
    [next.jdbc :as jdbc]
    [messaging-service.db :as db]
    [messaging-service.message :as message]
    [messaging-service.provider :as provider]
    [ring.middleware.json :as ring-json]))
+
+(defn- denamespace [m]
+  (walk/postwalk
+   (fn [x]
+     (if (keyword? x)
+       (keyword (name x))
+       x))
+   m))
 
 (defn wrap-handle-messages [next]
   (fn [{:keys [uri data-source body] :as request}]
@@ -14,8 +23,9 @@
       (let [message        (message/normalize body)
             send-result    (provider/send-message-with-retries message)
             message-result (db/insert-message data-source message)]
-        {:status 200, :body {:status :ok,
-                             :message message-result}}))))
+        {:status 200,
+         :body {:status :ok,
+                :message (denamespace message-result)}}))))
 
 (defn wrap-add-datasource [next ds]
   (fn [request]
