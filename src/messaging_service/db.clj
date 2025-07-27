@@ -93,3 +93,21 @@
        ::message/body body
        ::message/timestamp timestamp
        ::message/provider_id provider_id})))
+
+(defn conversations
+  [ds]
+  (jdbc/execute! ds ["WITH message_participants AS (
+                             SELECT m.id AS message_id, pa.participant_id AS participant_id
+                                FROM messages m
+                                     JOIN participant_addresses pa ON ( m.\"from\" = pa.url )
+                        UNION SELECT m.id, pa.participant_id
+                                FROM messages m
+                                     JOIN message_recipients mr ON ( mr.message_id = m.id )
+                                     JOIN participant_addresses pa ON ( mr.\"to\" = pa.url )
+                      ), conversations AS (
+                            SELECT mp.message_id, array_agg(mp.participant_id ORDER BY mp.participant_id) AS parts
+                              FROM message_participants mp
+                          GROUP BY mp.message_id
+                      )
+                      SELECT * FROM conversations;
+                     "]))

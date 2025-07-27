@@ -30,7 +30,7 @@
 
   Cleans the database, invokes, queries for resulting objects and returns the objects
   and the API response for interrogation."
-  [uri & [body]]
+  [uri body]
   (let [data-source (jdbc/get-datasource db-spec)
         handler     (handler/make-handler
                      {:db-spec db-spec})
@@ -222,5 +222,6 @@
   (testing "Conversations list endpoint"
     (let [{:keys [response message-recipients]
            [message] :messages}
-          (invoke "/api/conversations")]
+          (invoke "/api/conversations" nil)]
+      (prn response)
       (is (= 200 (:status response))))))

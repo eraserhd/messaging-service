@@ -44,7 +44,7 @@
   (fn [{:keys [uri data-source], :as request}]
     (if (re-matches #"^/api/conversations" uri)
       {:status 200
-       :body {:conversations []}}
+       :body {:conversations (db/conversations data-source)}}
       (next request))))
 
 (defn wrap-add-datasource [next ds]
