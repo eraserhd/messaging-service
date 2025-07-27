@@ -127,4 +127,5 @@
                    :body "<html><body>This is an incoming email with <b>HTML</b> content</body></html>",
                    :attachments ["https://example.com/received-document.pdf"],
                    :timestamp "2024-11-01T14:00:00Z"})]
-      (is (= 200 (:status response))))))
+      (is (= 200 (:status response)))
+      (is (= "ok" (get-in response [:body :status]))))))
