@@ -5,7 +5,11 @@
   [clojure.java.io :as io]
   [messaging-service.handler :as handler]
   [next.jdbc :as jdbc]
-  [ring.mock.request :as mock]))
+  [ring.mock.request :as mock]
+
+  ;; Register providers
+  [messaging-service.provider.sendgrid]
+  [messaging-service.provider.twilio]))
 
 (def ^:private db-spec
   {:dbtype "postgres", :dbname "messaging_service", :user "messaging_user", :password "messaging_password"})

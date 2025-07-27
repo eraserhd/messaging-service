@@ -1,7 +1,11 @@
 (ns messaging-service.main
  (:require
   [messaging-service.handler :as handler]
-  [ring.adapter.jetty :as jetty]))
+  [ring.adapter.jetty :as jetty]
+
+  ;; Register providers
+  [messaging-service.provider.sendgrid]
+  [messaging-service.provider.twilio]))
 
 (defn -main []
   (let [db-spec (read-string (System/getenv "DB_SPEC"))
