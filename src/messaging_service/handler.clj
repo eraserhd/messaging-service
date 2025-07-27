@@ -28,6 +28,13 @@
                 :message (denamespace message-result)}})
       (next request))))
 
+(defn wrap-handle-webhooks [next]
+  (fn [{:keys [uri], :as request}]
+    (if-let [[_ url-type] (re-matches #"^/api/webhooks/([^/]*)/?$" uri)]
+      {:status 200,
+       :body {:status :ok}}
+      (next request))))
+
 (defn wrap-add-datasource [next ds]
   (fn [request]
     (next (assoc request :data-source ds))))
@@ -38,6 +45,7 @@
 
     (-> (constantly {:status 404, :body "NOT FOUND"})
         wrap-handle-messages
+        wrap-handle-webhooks
         ring-json/wrap-json-response
         (ring-json/wrap-json-body {:keywords? true})
         (wrap-add-datasource data-source))))
