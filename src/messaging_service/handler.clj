@@ -3,13 +3,15 @@
    [clojure.string :as str]
    [next.jdbc :as jdbc]
    [messaging-service.db :as db]
+   [messaging-service.message :as message]
    [ring.middleware.json :as ring-json]))
 
 (defn wrap-handle-messages [next]
   (fn [{:keys [uri data-source body] :as request}]
     (if-not (str/starts-with? uri "/api/messages/")
       (next request)
-      (let [message-result (db/insert-message data-source body)]
+      (let [message        (message/normalize body)
+            message-result (db/insert-message data-source message)]
         {:status 200, :body {:status :ok,
                              :message message-result}}))))
 

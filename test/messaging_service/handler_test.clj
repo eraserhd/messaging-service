@@ -18,7 +18,12 @@
     DELETE FROM participants;
   ")
 
-(defn- invoke [uri body]
+(defn- invoke
+  "Invoke the system-under-test.
+
+  Cleans the database, invokes, queries for resulting objects and returns the objects
+  and the API response for interrogation."
+  [uri body]
   (let [data-source (jdbc/get-datasource db-spec)
         _           (jdbc/execute! data-source [test-db-clean])
         handler     (handler/make-handler
@@ -33,13 +38,13 @@
      :messages messages
      :message-attachments attachments}))
 
-(deftest t-sms-send
+(deftest t-api-message-endpoints
   (testing "Sending SMS messages"
     (let [{:keys [response],
            [message] :messages}
           (invoke "/api/messages/sms"
                   {:type "sms",
-                   :from "mailto:jason.m.felice@gmail.com",
+                   :from "+12016661234",
                    :body "helloo!!"
                    :timestamp "2025-07-26T03:30:29Z"
                    :attachments nil})]
@@ -48,7 +53,7 @@
       (is message "the message was stored in the database.")
       (is (:messages/id message) "the stored message has a unique id")
       (is (= {:messages/type "sms"
-              :messages/from "mailto:jason.m.felice@gmail.com"
+              :messages/from "tel:+12016661234"
               :messages/body "helloo!!"
               :messages/timestamp #inst "2025-07-26T03:30:29Z"}
              (dissoc message :messages/id))
@@ -56,7 +61,7 @@
 
       (is (get-in response [:body :message]) "the resulting message was returned in the response")
       (is (= {:type "sms"
-              :from "mailto:jason.m.felice@gmail.com"
+              :from "tel:+12016661234"
               :body "helloo!!"
               :timestamp "2025-07-26T03:30:29Z"}
              (-> response :body :message (dissoc :id)))
@@ -69,7 +74,7 @@
            [message] :messages}
           (invoke "/api/messages/sms"
                   {:type "mms",
-                   :from "mailto:jason.m.felice@gmail.com",
+                   :from "+12016661234",
                    :body "helloo!!"
                    :timestamp "2025-07-26T03:30:29Z"
                    :attachments ["https://example.com/image.jpg"
