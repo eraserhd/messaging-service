@@ -70,6 +70,7 @@
 
 (defn insert-message
   [ds {:keys [::message/from
+              ::message/to
               ::message/type
               ::message/body
               ::message/timestamp
@@ -83,6 +84,9 @@
                          id from (name type) body timestamp provider_id])
       (doseq [url attachments]
         (jdbc/execute! tx ["INSERT INTO message_attachments (message_id, url) VALUES (?, ?);" id url]))
+      (doseq [recipient to]
+        (upsert-participant tx recipient)
+        (jdbc/execute! tx ["INSERT INTO message_recipients (message_id, \"to\") VALUES (?, ?);" id recipient]))
       {::message/id id
        ::message/from from
        ::message/type type

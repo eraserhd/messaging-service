@@ -19,6 +19,7 @@
 (def ^:private test-db-clean
   "
     DELETE FROM message_attachments;
+    DELETE FROM message_recipients;
     DELETE FROM messages;
     DELETE FROM participant_addresses;
     DELETE FROM participants;
@@ -66,6 +67,7 @@
           (invoke "/api/messages/sms"
                   {:type "sms",
                    :from "+12016661234",
+                   :to "+18045551234",
                    :body "helloo!!"
                    :timestamp "2025-07-26T03:30:29Z"
                    :attachments nil})]
@@ -97,6 +99,7 @@
           (invoke "/api/messages/sms"
                   {:type "mms",
                    :from "+12016661234",
+                   :to "+18045551234",
                    :body "helloo!!"
                    :timestamp "2025-07-26T03:30:29Z"
                    :attachments ["https://example.com/image.jpg"
@@ -115,17 +118,16 @@
     (let [{:keys [response message-attachments],
            [message] :messages}
           (invoke "/api/messages/email"
-                  {:from "+12016661234",
-                   :body "helloo!!"
-                   :timestamp "2025-07-26T03:30:29Z"
-                   :attachments ["https://example.com/image.jpg"
-                                 "https://example.com/surprise_pikachu.jpg"]})]
+                  {:from "user@usehatchapp.com",
+                   :to "contact@gmail.com",
+                   :body "Hello! This is a test email message with <b>HTML</b> formatting.",
+                   :attachments ["https://example.com/document.pdf"],
+                   :timestamp "2024-11-01T14:00:00Z"})]
       (is (= 200 (:status response)))
       (is (= "ok" (get-in response [:body :status])))
       (is (= "email" (:messages/type message))
           "it has the right type")
-      (is (= #{"https://example.com/image.jpg"
-               "https://example.com/surprise_pikachu.jpg"}
+      (is (= #{"https://example.com/document.pdf"}
              (->> message-attachments
                   (map :message_attachments/url)
                   (into #{}))))))
@@ -134,11 +136,11 @@
       (let [{:keys [response message-attachments],
              [message] :messages}
             (invoke "/api/messages/email"
-                    {:from "+12016661234",
-                     :body "helloo!!"
-                     :timestamp "2025-07-26T03:30:29Z"
-                     :attachments ["https://example.com/image.jpg"
-                                   "https://example.com/surprise_pikachu.jpg"]})]
+                    {:from "user@usehatchapp.com",
+                     :to "contact@gmail.com",
+                     :body "Hello! This is a test email message with <b>HTML</b> formatting.",
+                     :attachments ["https://example.com/document.pdf"],
+                     :timestamp "2024-11-01T14:00:00Z"})]
         (is (= 500 (:status response)))
         (is (= "error" (get-in response [:body :status]))))))
   (testing "When the downstream provider wants us to back off"
@@ -148,11 +150,11 @@
             {:keys [response
                     message-attachments],
              [message] :messages}         (invoke "/api/messages/email"
-                                                  {:from "+12016661234",
-                                                   :body "helloo!!"
-                                                   :timestamp "2025-07-26T03:30:29Z"
-                                                   :attachments ["https://example.com/image.jpg"
-                                                                 "https://example.com/surprise_pikachu.jpg"]})
+                                            {:from "user@usehatchapp.com",
+                                             :to "contact@gmail.com",
+                                             :body "Hello! This is a test email message with <b>HTML</b> formatting.",
+                                             :attachments ["https://example.com/document.pdf"],
+                                             :timestamp "2024-11-01T14:00:00Z"})
             end                           (System/currentTimeMillis)]
         (is (= 200 (:status response)))
         (is (= "ok" (get-in response [:body :status])))
@@ -168,7 +170,7 @@
            [message] :messages}
           (invoke "/api/webhooks/email"
                   {:from "contact@gmail.com",
-                   ;:to "user@usehatchapp.com",
+                   :to "user@usehatchapp.com",
                    :xillio_id "message-3",
                    :body "<html><body>This is an incoming email with <b>HTML</b> content</body></html>",
                    :attachments ["https://example.com/received-document.pdf"],

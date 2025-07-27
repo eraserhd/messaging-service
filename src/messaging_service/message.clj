@@ -35,4 +35,8 @@
                         :timestamp ::timestamp
                         :attachments ::attachments})
       (update ::type keyword)
-      (update ::from normalize-address)))
+      (update ::from normalize-address)
+      (update ::to   (fn [to]
+                       (if (string? to)
+                         [to]
+                         to)))))
