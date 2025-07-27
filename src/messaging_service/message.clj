@@ -32,6 +32,7 @@
       (set/rename-keys {:type ::type
                         :from ::from
                         :body ::body
-                        :timestamp ::timestamp})
+                        :timestamp ::timestamp
+                        :attachments ::attachments})
       (update ::type keyword)
       (update ::from normalize-address)))

@@ -68,7 +68,7 @@
         id))))
 
 (defn insert-message
-  [ds {:keys [::message/from ::message/type ::message/body ::message/timestamp attachments]}]
+  [ds {:keys [::message/from ::message/type ::message/body ::message/timestamp ::message/attachments]}]
   (let [id        (random-uuid)
         timestamp (java.util.Date/from (java.time.Instant/parse timestamp))]
     (jdbc/with-transaction [tx ds]
