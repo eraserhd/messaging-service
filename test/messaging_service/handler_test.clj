@@ -190,7 +190,8 @@
                    :timestamp "2024-11-01T14:00:00Z"})]
       (is (= 200 (:status response)))
       (is (= "ok" (get-in response [:body :status])))
-      (is (= "sms" (:messages/type message)))))
+      (is (= "sms" (:messages/type message)))
+      (is (= "message-1" (:messages/provider_id message)))))
   (testing "Receiving MMS messages"
     (let [{:keys [response message-attachments]
            [message] :messages}

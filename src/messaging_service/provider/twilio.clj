@@ -15,4 +15,18 @@
 
 (defmethod provider/extract-webhook-message :sms
   [_ body]
-  (message/normalize body))
+  (let [{:keys [from
+                to
+                type
+                messaging_provider_id
+                body
+                attachments
+                timestamp]} body]
+    (message/normalize
+     {::message/from        from
+      ::message/to          to
+      ::message/type        type
+      ::message/provider_id messaging_provider_id
+      ::message/body        body
+      ::message/attachments attachments
+      ::message/timestamp   timestamp})))
