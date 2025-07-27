@@ -52,6 +52,13 @@
   Returns the new or existing participant ID."
   [ds url]
   (jdbc/with-transaction [tx ds]
+    ;; Advisory lock is necessary to prevent race on two processes attempting to insert. Normally,
+    ;; I'd do this with INSERT .. ON CONFLICT UPDATE, but that's not possible here because of the
+    ;; the foreign key and two insert statements.
+    ;;
+    ;; (hash url) uses Clojure's internal hashing algorithm, which has been known to change across
+    ;; versions.  It would be better to use eight bytes from a SHA256 in production.
+    (jdbc/execute! tx ["SELECT pg_advisory_xact_lock(?);" (hash url)])
     (if-let [{id :participant_addresses/participant_id} (jdbc/execute-one! tx ["SELECT participant_id FROM participant_addresses WHERE url = ?;" url])]
       id
       (let [id (random-uuid)]
