@@ -43,7 +43,7 @@
         recipients  (jdbc/execute! data-source ["SELECT \"to\" FROM message_recipients;"])
         attachments (jdbc/execute! data-source ["SELECT * FROM message_attachments;"])
         _           (jdbc/execute! data-source [test-db-clean])]
-    {:response response
+    {:responses [response]
      :messages messages
      :message-attachments attachments
      :message-recipients recipients}))
@@ -65,7 +65,8 @@
 
 (deftest t-api-message-endpoints
   (testing "Sending SMS messages"
-    (let [{:keys [response message-recipients],
+    (let [{:keys [message-recipients],
+           [response] :responses,
            [message] :messages}
           (invoke "/api/messages/sms"
                   {:type "sms",
@@ -98,7 +99,8 @@
              (str (:messages/id message)))
           "the correct id was returned")))
   (testing "Sending MMS messages, with attachments"
-    (let [{:keys [response message-attachments],
+    (let [{:keys [message-attachments],
+           [response] :responses
            [message] :messages}
           (invoke "/api/messages/sms"
                   {:type "mms",
@@ -119,7 +121,8 @@
                   (into #{})))
           "the attachments were stored in the database")))
   (testing "Sending email messages"
-    (let [{:keys [response message-attachments message-recipients],
+    (let [{:keys [message-attachments message-recipients],
+           [response] :responses
            [message] :messages}
           (invoke "/api/messages/email"
                   {:from "user@usehatchapp.com",
@@ -138,7 +141,8 @@
                   (into #{}))))))
   (testing "When the downstream provider fails"
     (with-redefs [provider/send-message erroring-send-message]
-      (let [{:keys [response message-attachments],
+      (let [{:keys [message-attachments],
+             [response] :responses
              [message] :messages}
             (invoke "/api/messages/email"
                     {:from "user@usehatchapp.com",
@@ -152,8 +156,8 @@
     (with-redefs [provider/send-message throttled-send-message]
       (reset! throttled? false)
       (let [start                         (System/currentTimeMillis)
-            {:keys [response
-                    message-attachments],
+            {:keys [message-attachments],
+             [response] :responses,
              [message] :messages}         (invoke "/api/messages/email"
                                             {:from "user@usehatchapp.com",
                                              :to "contact@gmail.com",
@@ -168,7 +172,8 @@
 
 (deftest t-api-webhook-endpoints
   (testing "Receiving email messages"
-    (let [{:keys [response message-recipients]
+    (let [{:keys [message-recipients]
+           [response] :responses
            [message] :messages}
           (invoke "/api/webhooks/email"
                   {:from "contact@gmail.com",
@@ -183,7 +188,8 @@
       (is (= "message-3" (:messages/provider_id message)))
       (is (= [{:message_recipients/to "mailto:user@usehatchapp.com"}] message-recipients))))
   (testing "Receiving SMS messages"
-    (let [{:keys [response message-recipients]
+    (let [{:keys [message-recipients]
+           [response] :responses
            [message] :messages}
           (invoke "/api/webhooks/sms"
                   {:from "+18045551234",
@@ -199,7 +205,8 @@
       (is (= "message-1" (:messages/provider_id message)))
       (is (= [{:message_recipients/to "tel:+12016661234"}] message-recipients))))
   (testing "Receiving MMS messages"
-    (let [{:keys [response message-attachments]
+    (let [{:keys [message-attachments]
+           [response] :responses
            [message] :messages}
           (invoke "/api/webhooks/sms"
                   {:from "+18045551234",
@@ -220,7 +227,8 @@
 
 (deftest t-api-conversations
   (testing "Conversations list endpoint"
-    (let [{:keys [response message-recipients]
+    (let [{:keys [message-recipients]
+           [response] :responses
            [message] :messages}
           (invoke "/api/conversations" nil)]
       (prn response)
