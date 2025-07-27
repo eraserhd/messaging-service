@@ -40,6 +40,13 @@
          :body {:status :ok}})
       (next request))))
 
+(defn wrap-handle-conversations [next]
+  (fn [{:keys [uri data-source], :as request}]
+    (if (re-matches #"^/api/conversations" uri)
+      {:status 200
+       :body {:conversations []}}
+      (next request))))
+
 (defn wrap-add-datasource [next ds]
   (fn [request]
     (next (assoc request :data-source ds))))
@@ -55,6 +62,7 @@
     (-> (constantly {:status 404, :body "NOT FOUND"})
         wrap-handle-messages
         wrap-handle-webhooks
+        wrap-handle-conversations
         ring-json/wrap-json-response
         (ring-json/wrap-json-body {:keywords? true})
         (wrap-add-providers (provider/start))

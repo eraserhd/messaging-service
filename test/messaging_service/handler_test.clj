@@ -30,14 +30,15 @@
 
   Cleans the database, invokes, queries for resulting objects and returns the objects
   and the API response for interrogation."
-  [uri body]
+  [uri & [body]]
   (let [data-source (jdbc/get-datasource db-spec)
         handler     (handler/make-handler
                      {:db-spec db-spec})
-        response    (-> (mock/request :post uri)
-                        (mock/json-body body)
-                        handler
-                        (update-in [:body] json/parse-string true))
+        method      (if body :post :get)
+        response    (cond-> (mock/request method uri)
+                        (= method :post) (mock/json-body body)
+                        true             handler
+                        true             (update-in [:body] json/parse-string true))
         messages    (jdbc/execute! data-source ["SELECT * FROM messages;"])
         recipients  (jdbc/execute! data-source ["SELECT \"to\" FROM message_recipients;"])
         attachments (jdbc/execute! data-source ["SELECT * FROM message_attachments;"])
@@ -216,3 +217,10 @@
                   (map :message_attachments/url)
                   (into #{})))
           "the attachments were stored in the database"))))
+
+(deftest t-api-conversations
+  (testing "Conversations list endpoint"
+    (let [{:keys [response message-recipients]
+           [message] :messages}
+          (invoke "/api/conversations")]
+      (is (= 200 (:status response))))))
