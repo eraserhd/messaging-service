@@ -31,6 +31,7 @@
   (-> message
       (set/rename-keys {:type ::type
                         :from ::from
+                        :to   ::to
                         :body ::body
                         :timestamp ::timestamp
                         :attachments ::attachments})
@@ -39,4 +40,5 @@
       (update ::to   (fn [to]
                        (if (string? to)
                          [to]
-                         to)))))
+                         to)))
+      (update ::to   (partial mapv normalize-address))))

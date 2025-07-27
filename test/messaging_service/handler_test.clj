@@ -39,11 +39,13 @@
                         handler
                         (update-in [:body] json/parse-string true))
         messages    (jdbc/execute! data-source ["SELECT * FROM messages;"])
+        recipients  (jdbc/execute! data-source ["SELECT \"to\" FROM message_recipients;"])
         attachments (jdbc/execute! data-source ["SELECT * FROM message_attachments;"])
         _           (jdbc/execute! data-source [test-db-clean])]
     {:response response
      :messages messages
-     :message-attachments attachments}))
+     :message-attachments attachments
+     :message-recipients recipients}))
 
 (defmulti erroring-send-message ::message/type)
 (defmethod erroring-send-message :email
@@ -62,7 +64,7 @@
 
 (deftest t-api-message-endpoints
   (testing "Sending SMS messages"
-    (let [{:keys [response],
+    (let [{:keys [response message-recipients],
            [message] :messages}
           (invoke "/api/messages/sms"
                   {:type "sms",
@@ -82,6 +84,7 @@
               :messages/provider_id nil}
              (dissoc message :messages/id))
           "the stored message has other expected field values")
+      (is (= [{:message_recipients/to "tel:+18045551234"}] message-recipients))
       (is (get-in response [:body :message]) "the resulting message was returned in the response")
       (is (= {:type "sms"
               :from "tel:+12016661234"
@@ -115,7 +118,7 @@
                   (into #{})))
           "the attachments were stored in the database")))
   (testing "Sending email messages"
-    (let [{:keys [response message-attachments],
+    (let [{:keys [response message-attachments message-recipients],
            [message] :messages}
           (invoke "/api/messages/email"
                   {:from "user@usehatchapp.com",
@@ -127,6 +130,7 @@
       (is (= "ok" (get-in response [:body :status])))
       (is (= "email" (:messages/type message))
           "it has the right type")
+      (is (= [{:message_recipients/to "mailto:contact@gmail.com"}] message-recipients))
       (is (= #{"https://example.com/document.pdf"}
              (->> message-attachments
                   (map :message_attachments/url)
