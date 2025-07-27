@@ -49,6 +49,16 @@
   [message]
   {:status :error, :error "U FAIL IT"})
 
+(def ^:private throttled? (atom false))
+(defmulti throttled-send-message ::message/type)
+(defmethod throttled-send-message :email
+  [message]
+  (if-not @throttled?
+    (do
+      (reset! throttled? true)
+      {:status :needs-retry, :retry-after 250})
+    {:status :ok}))
+
 (deftest t-api-message-endpoints
   (testing "Sending SMS messages"
     (let [{:keys [response],
@@ -128,7 +138,24 @@
                      :attachments ["https://example.com/image.jpg"
                                    "https://example.com/surprise_pikachu.jpg"]})]
         (is (= 500 (:status response)))
-        (is (= "error" (get-in response [:body :status])))))))
+        (is (= "error" (get-in response [:body :status]))))))
+  (testing "When the downstream provider wants us to back off"
+    (with-redefs [provider/send-message throttled-send-message]
+      (reset! throttled? false)
+      (let [start                         (System/currentTimeMillis)
+            {:keys [response
+                    message-attachments],
+             [message] :messages}         (invoke "/api/messages/email"
+                                                  {:from "+12016661234",
+                                                   :body "helloo!!"
+                                                   :timestamp "2025-07-26T03:30:29Z"
+                                                   :attachments ["https://example.com/image.jpg"
+                                                                 "https://example.com/surprise_pikachu.jpg"]})
+            end                           (System/currentTimeMillis)]
+        (is (= 200 (:status response)))
+        (is (= "ok" (get-in response [:body :status])))
+        (is (<= 250 (- end start))
+            "it should have waited at least 250 msec")))))
 
 
     ;; Recipients were added .
