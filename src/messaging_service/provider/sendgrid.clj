@@ -4,4 +4,5 @@
 
 (defmethod messaging-service.provider/send-message :email
   [message]
-  (prn "Sendgrid provider recieved this message: " message))
+  (prn "Sendgrid provider recieved this message: " message)
+  {:status :ok})

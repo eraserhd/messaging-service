@@ -4,6 +4,7 @@
    [next.jdbc :as jdbc]
    [messaging-service.db :as db]
    [messaging-service.message :as message]
+   [messaging-service.provider :as provider]
    [ring.middleware.json :as ring-json]))
 
 (defn wrap-handle-messages [next]
@@ -11,6 +12,8 @@
     (if-not (str/starts-with? uri "/api/messages/")
       (next request)
       (let [message        (message/normalize body)
+                             ;;FIXME:
+            send-result    (provider/send-message-with-retries (assoc message ::message/type (keyword (:type message))))
             message-result (db/insert-message data-source message)]
         {:status 200, :body {:status :ok,
                              :message message-result}}))))

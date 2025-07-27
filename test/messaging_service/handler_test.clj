@@ -4,6 +4,7 @@
   [clojure.test :refer [deftest testing is]]
   [clojure.java.io :as io]
   [messaging-service.handler :as handler]
+  [messaging-service.provider :as provider]
   [next.jdbc :as jdbc]
   [ring.mock.request :as mock]
 
@@ -28,6 +29,7 @@
   Cleans the database, invokes, queries for resulting objects and returns the objects
   and the API response for interrogation."
   [uri body]
+  (provider/shutdown)
   (let [data-source (jdbc/get-datasource db-spec)
         _           (jdbc/execute! data-source [test-db-clean])
         handler     (handler/make-handler
