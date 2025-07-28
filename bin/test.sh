@@ -101,9 +101,12 @@ curl -X GET "$BASE_URL/api/conversations" \
   -H "$CONTENT_TYPE" \
   -w "\nStatus: %{http_code}\n\n"
 
+# Using UUIDs, so we have to get a valid conversation ID to look up messages:
+readonly CONVERSATION_ID=$(curl -X GET "$BASE_URL/api/conversations" -H "$CONTENT_TYPE" | jq -r '.conversations .[0] .conversation_id')
+
 # Test 8: Get messages for a conversation (example conversation ID)
 echo "8. Testing get messages for conversation..."
-curl -X GET "$BASE_URL/api/conversations/1/messages" \
+curl -X GET "$BASE_URL/api/conversations/$CONVERSATION_ID/messages" \
   -H "$CONTENT_TYPE" \
   -w "\nStatus: %{http_code}\n\n"
 

@@ -42,10 +42,18 @@
 
 (defn wrap-handle-conversations [next]
   (fn [{:keys [uri data-source], :as request}]
-    (if (re-matches #"^/api/conversations" uri)
+    (condp re-matches uri
+      #"^/api/conversations$"
       {:status 200
        :body {:status :ok,
               :conversations (db/conversations data-source)}}
+       
+      #"^/api/conversations/([^/]*)/messages$" :>>
+      (fn [[_ conversation_id]]
+        {:status 200
+         :body {:status :ok
+                :messages (db/conversation-messages data-source conversation_id)}})
+
       (next request))))
 
 (defn wrap-add-datasource [next ds]

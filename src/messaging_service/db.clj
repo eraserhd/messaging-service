@@ -94,23 +94,41 @@
        ::message/timestamp timestamp
        ::message/provider_id provider_id})))
 
-(defn conversations
-  [ds]
-  (->> (jdbc/execute! ds ["WITH message_participants AS (
-                                 SELECT m.id AS message_id, pa.participant_id AS participant_id
-                                    FROM messages m
-                                         JOIN participant_addresses pa ON ( m.\"from\" = pa.url )
-                            UNION SELECT m.id, pa.participant_id
-                                    FROM messages m
-                                         JOIN message_recipients mr ON ( mr.message_id = m.id )
-                                         JOIN participant_addresses pa ON ( mr.\"to\" = pa.url )
-                          ), message_conversations AS (
-                                SELECT mp.message_id,
-                                       encode(sha256(string_agg(mp.participant_id::TEXT::BYTEA,',' ORDER BY mp.participant_id)),'hex') AS conversation_id
-                                  FROM message_participants mp
-                              GROUP BY mp.message_id
-                          ), conversations AS (
-                                SELECT DISTINCT conversation_id FROM message_conversations
-                          )
-                          SELECT * FROM conversations;
-                         "])))
+(defn conversations [ds]
+  (jdbc/execute! ds ["WITH message_participants AS (
+                             SELECT m.id AS message_id, pa.participant_id AS participant_id
+                                FROM messages m
+                                     JOIN participant_addresses pa ON ( m.\"from\" = pa.url )
+                        UNION SELECT m.id, pa.participant_id
+                                FROM messages m
+                                     JOIN message_recipients mr ON ( mr.message_id = m.id )
+                                     JOIN participant_addresses pa ON ( mr.\"to\" = pa.url )
+                      ), message_conversations AS (
+                            SELECT mp.message_id,
+                                   encode(sha256(string_agg(mp.participant_id::TEXT::BYTEA,',' ORDER BY mp.participant_id)),'hex') AS conversation_id
+                              FROM message_participants mp
+                          GROUP BY mp.message_id
+                      ), conversations AS (
+                            SELECT DISTINCT conversation_id FROM message_conversations
+                      )
+                      SELECT * FROM conversations;
+                     "]))
+
+(defn conversation-messages [ds conversation_id]
+  (jdbc/execute! ds ["WITH message_participants AS (
+                             SELECT m.id AS message_id, pa.participant_id AS participant_id
+                                FROM messages m
+                                     JOIN participant_addresses pa ON ( m.\"from\" = pa.url )
+                        UNION SELECT m.id, pa.participant_id
+                                FROM messages m
+                                     JOIN message_recipients mr ON ( mr.message_id = m.id )
+                                     JOIN participant_addresses pa ON ( mr.\"to\" = pa.url )
+                      ), message_conversations AS (
+                            SELECT mp.message_id,
+                                   encode(sha256(string_agg(mp.participant_id::TEXT::BYTEA,',' ORDER BY mp.participant_id)),'hex') AS conversation_id
+                              FROM message_participants mp
+                          GROUP BY mp.message_id
+                      )
+                      SELECT m.* FROM messages m, message_conversations mc
+                       WHERE m.id = mc.message_id AND mc.conversation_id = ?;
+                     " conversation_id]))
