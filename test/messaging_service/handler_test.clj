@@ -245,4 +245,5 @@
            "/api/conversations"
            nil)]
       (is (= 200 (:status response)))
-      (is (= "ok" (get-in response [:body :status]))))))
+      (is (= "ok" (get-in response [:body :status])))
+      (is (= 1 (count (get-in response [:body :conversations])))))))

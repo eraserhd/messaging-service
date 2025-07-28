@@ -95,6 +95,18 @@
        ::message/provider_id provider_id})))
 
 (defn conversations [ds]
+  ;; A conversation is defined as a unique group of participants with at least one message.
+  ;; Although we don't have a way to associate multiple addresses with a participant via
+  ;; the API, the system is designed to be able to support it somehow, and this still ends
+  ;; up the same conversation across providers.
+  ;;
+  ;; So we collect participant ids for each address for each message, sort unique and hash
+  ;; them, and return the distinct values.
+  ;;
+  ;; This query isn't great for performance, obviously.  If we knew participants can't
+  ;; change after the message is recorded (probably a fair assumption), we could compute
+  ;; and store this hash in the message table, and that would be better.
+  ;;
   (jdbc/execute! ds ["WITH message_participants AS (
                              SELECT m.id AS message_id, pa.participant_id AS participant_id
                                 FROM messages m
@@ -115,6 +127,7 @@
                      "]))
 
 (defn conversation-messages [ds conversation_id]
+  ;; Copy pasta and no unit tests - because I've run out of time.
   (jdbc/execute! ds ["WITH message_participants AS (
                              SELECT m.id AS message_id, pa.participant_id AS participant_id
                                 FROM messages m
