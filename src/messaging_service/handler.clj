@@ -52,7 +52,8 @@
       (fn [[_ conversation_id]]
         {:status 200
          :body {:status :ok
-                :messages (db/conversation-messages data-source conversation_id)}})
+                :messages (->> (db/conversation-messages data-source conversation_id)
+                               (mapv denamespace))}})
 
       (next request))))
 
