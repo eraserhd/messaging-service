@@ -33,6 +33,7 @@
   [& args]
   (let [data-source (jdbc/get-datasource db-spec)
         handler     (handler/make-handler {:db-spec db-spec})
+        _           (jdbc/execute! data-source [test-db-clean])
         responses   (->> args
                          (partition 2)
                          (map (fn [[uri body]]
@@ -44,8 +45,7 @@
                          (into []))
         messages    (jdbc/execute! data-source ["SELECT * FROM messages;"])
         recipients  (jdbc/execute! data-source ["SELECT \"to\" FROM message_recipients;"])
-        attachments (jdbc/execute! data-source ["SELECT * FROM message_attachments;"])
-        _           (jdbc/execute! data-source [test-db-clean])]
+        attachments (jdbc/execute! data-source ["SELECT * FROM message_attachments;"])]
     {:responses responses
      :messages messages
      :message-attachments attachments
@@ -231,8 +231,18 @@
 (deftest t-api-conversations
   (testing "Conversations list endpoint"
     (let [{:keys [message-recipients]
-           [response] :responses
+           [_ response] :responses
            [message] :messages}
-          (invoke "/api/conversations" nil)]
-      (prn response)
-      (is (= 200 (:status response))))))
+          (invoke
+           "/api/webhooks/sms"
+           {:from "+18045551234",
+            :to "+12016661234",
+            :type "mms",
+            :messaging_provider_id "message-1",
+            :body "This is an incoming SMS message",
+            :attachments ["https://example.com/received-image.jpg"],
+            :timestamp "2024-11-01T14:00:00Z"}
+           "/api/conversations"
+           nil)]
+      (is (= 200 (:status response)))
+      (is (= "ok" (get-in response [:body :status]))))))
